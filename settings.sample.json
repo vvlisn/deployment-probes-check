@@ -1,5 +1,4 @@
 {
-  "denied_names": [
-    "tls-example-ingress"
-  ]
+  "require_liveness_probe": true,
+  "require_readiness_probe": true
 }

@@ -4,135 +4,127 @@ import (
 	"encoding/json"
 	"testing"
 
-	corev1 "github.com/kubewarden/k8s-objects/api/core/v1"
-	metav1 "github.com/kubewarden/k8s-objects/apimachinery/pkg/apis/meta/v1"
 	kubewarden_protocol "github.com/kubewarden/policy-sdk-go/protocol"
-	kubewarden_testing "github.com/kubewarden/policy-sdk-go/testing"
 )
 
-func TestEmptySettingsLeadsToApproval(t *testing.T) {
-	settings := Settings{}
-	pod := corev1.Pod{
-		Metadata: &metav1.ObjectMeta{
-			Name:      "test-pod",
-			Namespace: "default",
+func TestValidateDeploymentProbes(t *testing.T) {
+	tests := []struct {
+		name        string
+		settings    string
+		deployment  string
+		shouldAllow bool
+	}{
+		{
+			name: "accept deployment with valid probe configurations",
+			settings: `{
+				"liveness_probe": {"required": true},
+				"readiness_probe": {"required": true}
+			}`,
+			deployment: `{
+				"apiVersion": "apps/v1",
+				"kind": "Deployment",
+				"spec": {
+					"template": {
+						"spec": {
+							"containers": [
+								{
+									"name": "test-container",
+									"livenessProbe": {
+										"httpGet": {
+											"path": "/healthz",
+											"port": 8080
+										}
+									},
+									"readinessProbe": {
+										"httpGet": {
+											"path": "/ready",
+											"port": 8080
+										}
+									}
+								}
+							]
+						}
+					}
+				}
+			}`,
+			shouldAllow: true,
+		},
+		{
+			name: "reject deployment with missing required probes",
+			settings: `{
+				"liveness_probe": {"required": true},
+				"readiness_probe": {"required": true}
+			}`,
+			deployment: `{
+				"apiVersion": "apps/v1",
+				"kind": "Deployment",
+				"spec": {
+					"template": {
+						"spec": {
+							"containers": [
+								{
+									"name": "test-container"
+								}
+							]
+						}
+					}
+				}
+			}`,
+			shouldAllow: false,
+		},
+		{
+			name: "accept deployment with optional probes",
+			settings: `{
+				"liveness_probe": {"required": false},
+				"readiness_probe": {"required": false}
+			}`,
+			deployment: `{
+				"apiVersion": "apps/v1",
+				"kind": "Deployment",
+				"spec": {
+					"template": {
+						"spec": {
+							"containers": [
+								{
+									"name": "test-container"
+								}
+							]
+						}
+					}
+				}
+			}`,
+			shouldAllow: true,
 		},
 	}
 
-	payload, err := kubewarden_testing.BuildValidationRequest(&pod, &settings)
-	if err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := kubewarden_protocol.ValidationRequest{
+				Request: kubewarden_protocol.KubernetesAdmissionRequest{
+					Object: json.RawMessage(test.deployment),
+				},
+				Settings: json.RawMessage(test.settings),
+			}
 
-	responsePayload, err := validate(payload)
-	if err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
+			payload, err := json.Marshal(request)
+			if err != nil {
+				t.Errorf("Unexpected error: %+v", err)
+			}
 
-	var response kubewarden_protocol.ValidationResponse
-	if err = json.Unmarshal(responsePayload, &response); err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
+			responsePayload, err := validate(payload)
+			if err != nil {
+				t.Errorf("Unexpected error: %+v", err)
+			}
 
-	if response.Accepted != true {
-		t.Errorf("Unexpected rejection: msg %s - code %d", *response.Message, *response.Code)
-	}
-}
+			var response kubewarden_protocol.ValidationResponse
+			if err := json.Unmarshal(responsePayload, &response); err != nil {
+				t.Errorf("Unexpected error: %+v", err)
+			}
 
-func TestApproval(t *testing.T) {
-	settings := Settings{
-		DeniedNames: []string{"foo", "bar"},
-	}
-	pod := corev1.Pod{
-		Metadata: &metav1.ObjectMeta{
-			Name:      "test-pod",
-			Namespace: "default",
-		},
-	}
-
-	payload, err := kubewarden_testing.BuildValidationRequest(&pod, &settings)
-	if err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	responsePayload, err := validate(payload)
-	if err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	var response kubewarden_protocol.ValidationResponse
-	if err = json.Unmarshal(responsePayload, &response); err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	if response.Accepted != true {
-		t.Error("Unexpected rejection")
-	}
-}
-
-func TestApproveFixture(t *testing.T) {
-	settings := Settings{
-		DeniedNames: []string{},
-	}
-
-	payload, err := kubewarden_testing.BuildValidationRequestFromFixture(
-		"test_data/pod.json",
-		&settings)
-	if err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	responsePayload, err := validate(payload)
-	if err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	var response kubewarden_protocol.ValidationResponse
-	if err = json.Unmarshal(responsePayload, &response); err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	if response.Accepted != true {
-		t.Error("Unexpected rejection")
-	}
-}
-
-func TestRejectionBecauseNameIsDenied(t *testing.T) {
-	settings := Settings{
-		DeniedNames: []string{"foo", "test-pod"},
-	}
-
-	pod := corev1.Pod{
-		Metadata: &metav1.ObjectMeta{
-			Name:      "test-pod",
-			Namespace: "default",
-		},
-	}
-
-	payload, err := kubewarden_testing.BuildValidationRequest(&pod, &settings)
-	if err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	responsePayload, err := validate(payload)
-	if err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	var response kubewarden_protocol.ValidationResponse
-	if err = json.Unmarshal(responsePayload, &response); err != nil {
-		t.Errorf("Unexpected error: %+v", err)
-	}
-
-	if response.Accepted != false {
-		t.Error("Unexpected approval")
-	}
-
-	expectedMessage := "The 'test-pod' name is on the deny list"
-	if response.Message == nil {
-		t.Errorf("expected response to have a message")
-	}
-	if *response.Message != expectedMessage {
-		t.Errorf("Got '%s' instead of '%s'", *response.Message, expectedMessage)
+			if response.Accepted != test.shouldAllow {
+				t.Errorf("Expected validation to return %v, got %v. Message: %s",
+					test.shouldAllow, response.Accepted, *response.Message)
+			}
+		})
 	}
 }

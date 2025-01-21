@@ -4,50 +4,53 @@
 #
 # This config can be saved to its default location with:
 #   kwctl scaffold artifacthub > artifacthub-pkg.yml 
-version: 0.0.1-unreleased
-name: policy-name
-displayName: Policy Name
-createdAt: 2023-10-16T08:39:33.352432617Z
-description: Short description
+version: 0.1.0
+name: deployment-probes-check
+displayName: Deployment Probes Check
+createdAt: 2024-01-11T12:25:50Z
+description: Policy is used to validate health check probes configuration in Kubernetes Deployments.
 license: Apache-2.0
-homeURL: https://github.com/yourorg/policy-name
+homeURL: https://github.com/vvhuang-ll/deployment-probes-check
 containersImages:
 - name: policy
-  image: ghcr.io/yourorg/policies/policy-name:v0.0.1-unreleased
+  image: ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
 keywords:
-- pod
-- cool policy
-- kubewarden
+- deployment
+- probes
+- health check
+- liveness
+- readiness
 links:
 - name: policy
-  url: https://github.com/yourorg/policy-name/releases/download/v0.0.1-unreleased/policy.wasm
+  url: https://github.com/vvhuang-ll/deployment-probes-check/releases/download/v0.1.0/policy.wasm
 - name: source
-  url: https://github.com/yourorg/policy-name
+  url: https://github.com/vvhuang-ll/deployment-probes-check
 install: |
   The policy can be obtained using [`kwctl`](https://github.com/kubewarden/kwctl):
   ```console
-  kwctl pull ghcr.io/yourorg/policies/policy-name:v0.0.1-unreleased
+  kwctl pull ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
   ```
   Then, generate the policy manifest and tune it to your liking. For example:
   ```console
-  kwctl scaffold manifest -t ClusterAdmissionPolicy registry://ghcr.io/yourorg/policies/policy-name:v0.0.1-unreleased
+  kwctl scaffold manifest -t ClusterAdmissionPolicy registry://ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
   ```
 maintainers:
-- name: Author name
-  email: author-email@example.com
+- name: Kubewarden developers
+  email: cncf-kubewarden-maintainers@lists.cncf.io
 provider:
   name: kubewarden
 recommendations:
 - url: https://artifacthub.io/packages/helm/kubewarden/kubewarden-controller
 annotations:
   kubewarden/mutation: 'false'
-  kubewarden/resources: Pod
+  kubewarden/resources: Deployments
   kubewarden/rules: |
     - apiGroups:
-      - ''
+      - 'apps'
       apiVersions:
       - v1
       resources:
-      - pods
+      - deployments
       operations:
       - CREATE
+      - UPDATE

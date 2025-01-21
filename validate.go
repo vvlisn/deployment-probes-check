@@ -3,63 +3,100 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
+	"net/http"
 
-	onelog "github.com/francoispqt/onelog"
-	corev1 "github.com/kubewarden/k8s-objects/api/core/v1"
 	kubewarden "github.com/kubewarden/policy-sdk-go"
 	kubewarden_protocol "github.com/kubewarden/policy-sdk-go/protocol"
+	"github.com/tidwall/gjson"
 )
 
-const httpBadRequestStatusCode = 400
-
+// validate validates the deployment configuration
 func validate(payload []byte) ([]byte, error) {
-	// Create a ValidationRequest instance from the incoming payload
+	// Parse the validation request
 	validationRequest := kubewarden_protocol.ValidationRequest{}
 	err := json.Unmarshal(payload, &validationRequest)
 	if err != nil {
+		Logger.ErrorWith("cannot unmarshal validation request").
+			Err("error", err).
+			Write()
 		return kubewarden.RejectRequest(
-			kubewarden.Message(err.Error()),
-			kubewarden.Code(httpBadRequestStatusCode))
+			kubewarden.Message(fmt.Sprintf("cannot unmarshal validation request: %v", err)),
+			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	// Create a Settings instance from the ValidationRequest object
+	// Parse the settings
 	settings, err := NewSettingsFromValidationReq(&validationRequest)
 	if err != nil {
+		Logger.ErrorWith("cannot unmarshal settings").
+			Err("error", err).
+			Write()
 		return kubewarden.RejectRequest(
-			kubewarden.Message(err.Error()),
-			kubewarden.Code(httpBadRequestStatusCode))
+			kubewarden.Message(fmt.Sprintf("cannot unmarshal settings: %v", err)),
+			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	// Access the **raw** JSON that describes the object
-	podJSON := validationRequest.Request.Object
+	// Access the raw JSON that describes the object
+	deploymentJSON := validationRequest.Request.Object
 
-	// Try to create a Pod instance using the RAW JSON we got from the
-	// ValidationRequest.
-	pod := &corev1.Pod{}
-	if err = json.Unmarshal([]byte(podJSON), pod); err != nil {
+	// Validate containers
+	containers := gjson.GetBytes(deploymentJSON, "spec.template.spec.containers")
+	if !containers.Exists() {
 		return kubewarden.RejectRequest(
-			kubewarden.Message(
-				fmt.Sprintf("Cannot decode Pod object: %s", err.Error())),
-			kubewarden.Code(httpBadRequestStatusCode))
+			kubewarden.Message("invalid deployment: missing containers"),
+			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	logger.DebugWithFields("validating pod object", func(e onelog.Entry) {
-		e.String("name", pod.Metadata.Name)
-		e.String("namespace", pod.Metadata.Namespace)
+	if !containers.IsArray() {
+		return kubewarden.RejectRequest(
+			kubewarden.Message("invalid deployment: containers must be an array"),
+			kubewarden.Code(http.StatusBadRequest))
+	}
+
+	if len(containers.Array()) == 0 {
+		return kubewarden.RejectRequest(
+			kubewarden.Message("no containers found in deployment"),
+			kubewarden.Code(http.StatusBadRequest))
+	}
+
+	// Validate each container's probes
+	var validationErr error
+	containers.ForEach(func(_, container gjson.Result) bool {
+		containerName := container.Get("name").String()
+		if containerName == "" {
+			validationErr = fmt.Errorf("container name is required")
+			return false
+		}
+
+		// Validate liveness probe
+		if settings.LivenessProbe.Required && !container.Get("livenessProbe").Exists() {
+			validationErr = fmt.Errorf("container '%s': missing liveness probe", containerName)
+			return false
+		}
+
+		// Validate readiness probe
+		if settings.ReadinessProbe.Required && !container.Get("readinessProbe").Exists() {
+			validationErr = fmt.Errorf("container '%s': missing readiness probe", containerName)
+			return false
+		}
+
+		// Validate startup probe
+		if settings.StartupProbe.Required && !container.Get("startupProbe").Exists() {
+			validationErr = fmt.Errorf("container '%s': missing startup probe", containerName)
+			return false
+		}
+
+		return true
 	})
 
-	if settings.IsNameDenied(pod.Metadata.Name) {
-		logger.InfoWithFields("rejecting pod object", func(e onelog.Entry) {
-			e.String("name", pod.Metadata.Name)
-			e.String("denied_names", strings.Join(settings.DeniedNames, ","))
-		})
-
+	if validationErr != nil {
+		Logger.WarnWith("deployment validation failed").
+			Err("error", validationErr).
+			Write()
 		return kubewarden.RejectRequest(
-			kubewarden.Message(
-				fmt.Sprintf("The '%s' name is on the deny list", pod.Metadata.Name)),
-			kubewarden.NoCode)
+			kubewarden.Message(validationErr.Error()),
+			kubewarden.Code(http.StatusBadRequest))
 	}
 
+	Logger.InfoWith("deployment validation succeeded").Write()
 	return kubewarden.AcceptRequest()
 }

@@ -1,33 +1,66 @@
 #!/usr/bin/env bats
 
-@test "reject because name is on deny list" {
-  run kwctl run annotated-policy.wasm -r test_data/pod.json --settings-json '{"denied_names": ["foo", "test-pod"]}'
+@test "accept deployment with valid probe configurations" {
+  run kwctl run annotated-policy.wasm \
+    -r test_data/deployment-valid.json \
+    --settings-json '{"liveness_probe": {"required": true}, "readiness_probe": {"required": true}}'
 
   # this prints the output when one the checks below fails
   echo "output = ${output}"
 
-  # request rejected
+  # request is accepted
   [ "$status" -eq 0 ]
-  [ $(expr "$output" : '.*allowed.*false') -ne 0 ]
-  [ $(expr "$output" : ".*The 'test-pod' name is on the deny list.*") -ne 0 ]
+  [[ "$output" =~ "deployment validation succeeded" ]]
 }
 
-@test "accept because name is not on the deny list" {
-  run kwctl run annotated-policy.wasm -r test_data/pod.json --settings-json '{"denied_names": ["foo"]}'
+@test "reject deployment with missing required probes" {
+  run kwctl run annotated-policy.wasm \
+    -r test_data/deployment-missing-probes.json \
+    --settings-json '{"liveness_probe": {"required": true}, "readiness_probe": {"required": true}}'
+
   # this prints the output when one the checks below fails
   echo "output = ${output}"
 
-  # request accepted
+  # request is rejected
   [ "$status" -eq 0 ]
-  [ $(expr "$output" : '.*allowed.*true') -ne 0 ]
+  [[ "$output" =~ "container 'test-container': missing liveness probe" ]]
 }
 
-@test "accept because the deny list is empty" {
-  run kwctl run annotated-policy.wasm -r test_data/pod.json
+@test "accept deployment with optional probes" {
+  run kwctl run annotated-policy.wasm \
+    -r test_data/deployment-missing-probes.json \
+    --settings-json '{"liveness_probe": {"required": false}, "readiness_probe": {"required": false}}'
+
   # this prints the output when one the checks below fails
   echo "output = ${output}"
 
-  # request accepted
+  # request is accepted
   [ "$status" -eq 0 ]
-  [ $(expr "$output" : '.*allowed.*true') -ne 0 ]
+  [[ "$output" =~ "deployment validation succeeded" ]]
+}
+
+@test "accept settings with no probes required" {
+  run kwctl run annotated-policy.wasm \
+    -r test_data/deployment-valid.json \
+    --settings-json '{"liveness_probe": {"required": false}, "readiness_probe": {"required": false}, "startup_probe": {"required": false}}'
+
+  # this prints the output when one the checks below fails
+  echo "output = ${output}"
+
+  # settings validation succeeded
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "deployment validation succeeded" ]]
+}
+
+@test "accept settings validation" {
+  run kwctl run annotated-policy.wasm \
+    -r test_data/deployment-valid.json \
+    --settings-json '{"liveness_probe": {"required": true}}'
+
+  # this prints the output when one the checks below fails
+  echo "output = ${output}"
+
+  # settings validation succeeded
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "deployment validation succeeded" ]]
 }
