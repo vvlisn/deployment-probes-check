@@ -180,3 +180,79 @@ func TestValidateMethod(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateProbeTimeSettings(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings Settings
+		isValid  bool
+	}{
+		{
+			name: "valid time settings",
+			settings: Settings{
+				LivenessProbe: ProbeConfig{
+					Required:          true,
+					MinPeriodSeconds:  30,
+					MaxTimeoutSeconds: 5,
+				},
+			},
+			isValid: true,
+		},
+		{
+			name: "negative min period seconds",
+			settings: Settings{
+				LivenessProbe: ProbeConfig{
+					Required:          true,
+					MinPeriodSeconds:  -10,
+					MaxTimeoutSeconds: 5,
+				},
+			},
+			isValid: false,
+		},
+		{
+			name: "negative max timeout seconds",
+			settings: Settings{
+				LivenessProbe: ProbeConfig{
+					Required:          true,
+					MinPeriodSeconds:  30,
+					MaxTimeoutSeconds: -5,
+				},
+			},
+			isValid: false,
+		},
+		{
+			name: "min period less than max timeout",
+			settings: Settings{
+				LivenessProbe: ProbeConfig{
+					Required:          true,
+					MinPeriodSeconds:  5,
+					MaxTimeoutSeconds: 10,
+				},
+			},
+			isValid: false,
+		},
+		{
+			name: "zero time settings",
+			settings: Settings{
+				LivenessProbe: ProbeConfig{
+					Required:          true,
+					MinPeriodSeconds:  0,
+					MaxTimeoutSeconds: 0,
+				},
+			},
+			isValid: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.settings.Validate()
+			if test.isValid && err != nil {
+				t.Errorf("Expected settings to be valid, got error: %v", err)
+			}
+			if !test.isValid && err == nil {
+				t.Error("Expected settings to be invalid, but got no error")
+			}
+		})
+	}
+}

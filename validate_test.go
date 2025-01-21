@@ -15,6 +15,78 @@ func TestValidateDeploymentProbes(t *testing.T) {
 		shouldAllow bool
 	}{
 		{
+			name: "reject deployment with invalid probe period",
+			settings: `{
+				"liveness_probe": {"required": true, "min_period_seconds": 10},
+				"readiness_probe": {"required": true}
+			}`,
+			deployment: `{
+				"apiVersion": "apps/v1",
+				"kind": "Deployment",
+				"spec": {
+					"template": {
+						"spec": {
+							"containers": [
+								{
+									"name": "test-container",
+									"livenessProbe": {
+										"httpGet": {
+											"path": "/healthz",
+											"port": 8080
+										},
+										"periodSeconds": 5
+									},
+									"readinessProbe": {
+										"httpGet": {
+											"path": "/ready",
+											"port": 8080
+										}
+									}
+								}
+							]
+						}
+					}
+				}
+			}`,
+			shouldAllow: false,
+		},
+		{
+			name: "reject deployment with invalid probe timeout",
+			settings: `{
+				"liveness_probe": {"required": true, "max_timeout_seconds": 5},
+				"readiness_probe": {"required": true}
+			}`,
+			deployment: `{
+				"apiVersion": "apps/v1",
+				"kind": "Deployment",
+				"spec": {
+					"template": {
+						"spec": {
+							"containers": [
+								{
+									"name": "test-container",
+									"livenessProbe": {
+										"httpGet": {
+											"path": "/healthz",
+											"port": 8080
+										},
+										"timeoutSeconds": 10
+									},
+									"readinessProbe": {
+										"httpGet": {
+											"path": "/ready",
+											"port": 8080
+										}
+									}
+								}
+							]
+						}
+					}
+				}
+			}`,
+			shouldAllow: false,
+		},
+		{
 			name: "accept deployment with valid probe configurations",
 			settings: `{
 				"liveness_probe": {"required": true},

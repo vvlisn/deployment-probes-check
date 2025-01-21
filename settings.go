@@ -8,16 +8,24 @@ import (
 	kubewarden_protocol "github.com/kubewarden/policy-sdk-go/protocol"
 )
 
-// Settings represents the policy settings
+// Settings represents the policy settings for validating Kubernetes deployment probes
 type Settings struct {
-	LivenessProbe  ProbeConfig `json:"liveness_probe"`
+	// LivenessProbe specifies the requirements for liveness probe configuration
+	LivenessProbe ProbeConfig `json:"liveness_probe"`
+	// ReadinessProbe specifies the requirements for readiness probe configuration
 	ReadinessProbe ProbeConfig `json:"readiness_probe"`
-	StartupProbe   ProbeConfig `json:"startup_probe"`
+	// StartupProbe specifies the requirements for startup probe configuration
+	StartupProbe ProbeConfig `json:"startup_probe"`
 }
 
-// ProbeConfig represents the configuration for a probe
+// ProbeConfig represents the configuration requirements for a probe
 type ProbeConfig struct {
+	// Required indicates whether the probe must be configured in the deployment
 	Required bool `json:"required"`
+	// MinPeriodSeconds specifies the minimum allowed period between probe executions (in seconds)
+	MinPeriodSeconds int32 `json:"min_period_seconds,omitempty"`
+	// MaxTimeoutSeconds specifies the maximum allowed timeout for probe execution (in seconds)
+	MaxTimeoutSeconds int32 `json:"max_timeout_seconds,omitempty"`
 }
 
 // DefaultSettings returns default settings
@@ -53,9 +61,38 @@ func (s *Settings) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate validates the Settings
+// Validate validates the Settings configuration
 func (s *Settings) Validate() error {
-	// All probes can be optional
+	// Validate liveness probe configuration
+	if err := s.validateProbeConfig("liveness probe", s.LivenessProbe); err != nil {
+		return err
+	}
+
+	// Validate readiness probe configuration
+	if err := s.validateProbeConfig("readiness probe", s.ReadinessProbe); err != nil {
+		return err
+	}
+
+	// Validate startup probe configuration
+	if err := s.validateProbeConfig("startup probe", s.StartupProbe); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validateProbeConfig validates individual probe configuration
+func (s *Settings) validateProbeConfig(probeName string, config ProbeConfig) error {
+	if config.MinPeriodSeconds < 0 {
+		return fmt.Errorf("%s: min_period_seconds must be non-negative", probeName)
+	}
+	if config.MaxTimeoutSeconds < 0 {
+		return fmt.Errorf("%s: max_timeout_seconds must be non-negative", probeName)
+	}
+	if config.MinPeriodSeconds > 0 && config.MaxTimeoutSeconds > 0 &&
+		config.MinPeriodSeconds <= config.MaxTimeoutSeconds {
+		return fmt.Errorf("%s: min_period_seconds must be greater than max_timeout_seconds", probeName)
+	}
 	return nil
 }
 

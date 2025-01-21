@@ -1,4 +1,5 @@
 {
+    "uid": "test",
     "dryRun": false,
     "kind": {
         "group": "apps",
@@ -7,13 +8,13 @@
     },
     "name": "test-deployment",
     "namespace": "default",
+    "operation": "CREATE",
     "object": {
-        "apiVersion": "apps/v1",
-        "kind": "Deployment",
+        "apiVersion": "apps/v1","kind": "Deployment",
         "metadata": {
             "annotations": {
                 "io.kubewarden.policy.echo.create": "true",
-                "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"io.kubewarden.policy.echo.create\":\"true\"},\"name\":\"test-deployment\",\"namespace\":\"default\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"test-deployment\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"test-deployment\"}},\"spec\":{\"containers\":[{\"image\":\"nginx:latest\",\"name\":\"test-container\",\"ports\":[{\"containerPort\":8080}],\"livenessProbe\":{\"httpGet\":{\"path\":\"/healthz\",\"port\":8080},\"periodSeconds\":3,\"timeoutSeconds\":5},\"readinessProbe\":{\"httpGet\":{\"path\":\"/ready\",\"port\":8080},\"periodSeconds\":5,\"timeoutSeconds\":1}}}]}}}}\n"
+                "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"io.kubewarden.policy.echo.create\":\"true\"},\"name\":\"test-deployment\",\"namespace\":\"default\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"test-deployment\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"test-deployment\"}},\"spec\":{\"containers\":[{\"image\":\"nginx:latest\",\"name\":\"test-container\",\"ports\":[{\"containerPort\":8080}],\"livenessProbe\":{\"httpGet\":{\"path\":\"/healthz\",\"port\":8080},\"periodSeconds\":5,\"timeoutSeconds\":10},\"readinessProbe\":{\"httpGet\":{\"path\":\"/ready\",\"port\":8080},\"periodSeconds\":2,\"timeoutSeconds\":8}}}]}}}}"
             },
             "creationTimestamp": "2024-01-11T12:25:50Z",
             "generation": 1,
@@ -50,61 +51,39 @@
                 "spec": {
                     "containers": [
                         {
-                            "name": "test-container",
                             "image": "nginx:latest",
-                            "imagePullPolicy": "Always",
+                            "name": "test-container",
                             "ports": [
                                 {
-                                    "containerPort": 8080,
-                                    "protocol": "TCP"
+                                    "containerPort": 8080
                                 }
                             ],
-                            "resources": {
-                                "limits": {
-                                    "cpu": "1m",
-                                    "memory": "1G"
-                                },
-                                "requests": {
-                                    "cpu": "10",
-                                    "memory": "10G"
-                                }
-                            },
-                            "terminationMessagePath": "/dev/termination-log",
-                            "terminationMessagePolicy": "File",
                             "livenessProbe": {
                                 "httpGet": {
                                     "path": "/healthz",
                                     "port": 8080
                                 },
-                                "periodSeconds": 3,
-                                "timeoutSeconds": 5
+                                "periodSeconds": 5,
+                                "timeoutSeconds": 10
                             },
                             "readinessProbe": {
                                 "httpGet": {
                                     "path": "/ready",
                                     "port": 8080
                                 },
-                                "periodSeconds": 5,
-                                "timeoutSeconds": 1
+                                "periodSeconds": 2,
+                                "timeoutSeconds": 8
                             }
                         }
-                    ],
-                    "dnsPolicy": "ClusterFirst",
-                    "restartPolicy": "Always",
-                    "schedulerName": "default-scheduler",
-                    "securityContext": {},
-                    "terminationGracePeriodSeconds": 30
+                    ]
                 }
             }
-        },
-        "status": {}
+        }
     },
-    "operation": "CREATE",
-    "options": {
-        "apiVersion": "meta.k8s.io/v1",
-        "fieldManager": "kubectl-client-side-apply",
-        "fieldValidation": "Strict",
-        "kind": "CreateOptions"
+    "resource": {
+        "group": "apps",
+        "resource": "deployments",
+        "version": "v1"
     },
     "requestKind": {
         "group": "apps",
@@ -116,12 +95,6 @@
         "resource": "deployments",
         "version": "v1"
     },
-    "resource": {
-        "group": "apps",
-        "resource": "deployments",
-        "version": "v1"
-    },
-    "uid": "test",
     "userInfo": {
         "groups": [
             "system:masters",

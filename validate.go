@@ -71,18 +71,51 @@ func validate(payload []byte) ([]byte, error) {
 		if settings.LivenessProbe.Required && !container.Get("livenessProbe").Exists() {
 			validationErr = fmt.Errorf("container '%s': missing liveness probe", containerName)
 			return false
+		} else if container.Get("livenessProbe").Exists() {
+			periodSeconds := container.Get("livenessProbe.periodSeconds").Int()
+			timeoutSeconds := container.Get("livenessProbe.timeoutSeconds").Int()
+			if settings.LivenessProbe.MinPeriodSeconds > 0 && periodSeconds < int64(settings.LivenessProbe.MinPeriodSeconds) {
+				validationErr = fmt.Errorf("container '%s': liveness probe period (%ds) is less than minimum required (%ds)", containerName, periodSeconds, settings.LivenessProbe.MinPeriodSeconds)
+				return false
+			}
+			if settings.LivenessProbe.MaxTimeoutSeconds > 0 && timeoutSeconds > int64(settings.LivenessProbe.MaxTimeoutSeconds) {
+				validationErr = fmt.Errorf("container '%s': liveness probe timeout (%ds) exceeds maximum allowed (%ds)", containerName, timeoutSeconds, settings.LivenessProbe.MaxTimeoutSeconds)
+				return false
+			}
 		}
 
 		// Validate readiness probe
 		if settings.ReadinessProbe.Required && !container.Get("readinessProbe").Exists() {
 			validationErr = fmt.Errorf("container '%s': missing readiness probe", containerName)
 			return false
+		} else if container.Get("readinessProbe").Exists() {
+			periodSeconds := container.Get("readinessProbe.periodSeconds").Int()
+			timeoutSeconds := container.Get("readinessProbe.timeoutSeconds").Int()
+			if settings.ReadinessProbe.MinPeriodSeconds > 0 && periodSeconds < int64(settings.ReadinessProbe.MinPeriodSeconds) {
+				validationErr = fmt.Errorf("container '%s': readiness probe periodSeconds %d is less than minimum %d", containerName, periodSeconds, settings.ReadinessProbe.MinPeriodSeconds)
+				return false
+			}
+			if settings.ReadinessProbe.MaxTimeoutSeconds > 0 && timeoutSeconds > int64(settings.ReadinessProbe.MaxTimeoutSeconds) {
+				validationErr = fmt.Errorf("container '%s': readiness probe timeoutSeconds %d is greater than maximum %d", containerName, timeoutSeconds, settings.ReadinessProbe.MaxTimeoutSeconds)
+				return false
+			}
 		}
 
 		// Validate startup probe
 		if settings.StartupProbe.Required && !container.Get("startupProbe").Exists() {
 			validationErr = fmt.Errorf("container '%s': missing startup probe", containerName)
 			return false
+		} else if container.Get("startupProbe").Exists() {
+			periodSeconds := container.Get("startupProbe.periodSeconds").Int()
+			timeoutSeconds := container.Get("startupProbe.timeoutSeconds").Int()
+			if settings.StartupProbe.MinPeriodSeconds > 0 && periodSeconds < int64(settings.StartupProbe.MinPeriodSeconds) {
+				validationErr = fmt.Errorf("container '%s': startup probe periodSeconds %d is less than minimum %d", containerName, periodSeconds, settings.StartupProbe.MinPeriodSeconds)
+				return false
+			}
+			if settings.StartupProbe.MaxTimeoutSeconds > 0 && timeoutSeconds > int64(settings.StartupProbe.MaxTimeoutSeconds) {
+				validationErr = fmt.Errorf("container '%s': startup probe timeoutSeconds %d is greater than maximum %d", containerName, timeoutSeconds, settings.StartupProbe.MaxTimeoutSeconds)
+				return false
+			}
 		}
 
 		return true

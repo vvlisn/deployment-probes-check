@@ -2,26 +2,53 @@
 
 # Deployment Probes Check
 
-This [Kubewarden](https://kubewarden.io) policy validates the health check probe configurations in Kubernetes Deployments.
+这个 [Kubewarden](https://kubewarden.io) 策略用于验证 Kubernetes Deployments 中的健康检查探针配置。它不仅可以验证必需的探针是否存在，还可以验证探针的时间参数是否合理。
 
-## Settings
+## 功能特性
+
+- 支持验证 liveness、readiness 和 startup 探针的配置
+- 可以设置哪些探针是必需的
+- 验证探针的时间参数是否合理，包括：
+  - initialDelaySeconds
+  - timeoutSeconds
+  - periodSeconds
+  - successThreshold
+  - failureThreshold
+
+## 配置说明
 
 The policy settings allow you to specify which probes are required for containers in Deployments:
 
 ```yaml
-# All fields are optional
+# 所有字段都是可选的
 liveness_probe:
-  required: true  # Whether liveness probe is required
+  required: true  # 是否要求 liveness 探针
+  min_period_seconds: 10  # 最小周期时间（秒）
+  max_period_seconds: 300  # 最大周期时间（秒）
+  min_timeout_seconds: 1  # 最小超时时间（秒）
+  max_timeout_seconds: 60  # 最大超时时间（秒）
 readiness_probe:
-  required: true  # Whether readiness probe is required
+  required: true  # 是否要求 readiness 探针
+  min_period_seconds: 10
+  max_period_seconds: 300
+  min_timeout_seconds: 1
+  max_timeout_seconds: 60
 startup_probe:
-  required: false # Whether startup probe is required
+  required: false  # 是否要求 startup 探针
+  min_period_seconds: 10
+  max_period_seconds: 300
+  min_timeout_seconds: 1
+  max_timeout_seconds: 60
 ```
 
-By default:
-- Liveness probe is required
-- Readiness probe is required
-- Startup probe is optional
+默认配置：
+- Liveness 探针是必需的
+- Readiness 探针是必需的
+- Startup 探针是可选的
+
+时间参数的默认限制：
+- periodSeconds: 10-300 秒
+- timeoutSeconds: 1-60 秒
 
 ## Examples
 

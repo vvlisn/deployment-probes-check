@@ -1,5 +1,31 @@
 #!/usr/bin/env bats
 
+@test "reject deployment with invalid probe period" {
+  run kwctl run annotated-policy.wasm \
+    -r test_data/deployment-invalid-probes.json \
+    --settings-json '{"liveness_probe": {"required": true, "min_period_seconds": 10}, "readiness_probe": {"required": true}}'
+
+  # this prints the output when one the checks below fails
+  echo "output = ${output}"
+
+  # request is rejected
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "container 'test-container': liveness probe period (5s) is less than minimum required (10s)" ]]
+}
+
+@test "reject deployment with invalid probe timeout" {
+  run kwctl run annotated-policy.wasm \
+    -r test_data/deployment-invalid-probes.json \
+    --settings-json '{"liveness_probe": {"required": true, "max_timeout_seconds": 5}, "readiness_probe": {"required": true}}'
+
+  # this prints the output when one the checks below fails
+  echo "output = ${output}"
+
+  # request is rejected
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "container 'test-container': liveness probe timeout (10s) exceeds maximum allowed (5s)" ]]
+}
+
 @test "accept deployment with valid probe configurations" {
   run kwctl run annotated-policy.wasm \
     -r test_data/deployment-valid.json \
