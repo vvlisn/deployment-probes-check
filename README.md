@@ -1,163 +1,88 @@
 [![Stable](https://img.shields.io/badge/status-stable-brightgreen?style=for-the-badge)](https://github.com/kubewarden/community/blob/main/REPOSITORIES.md#stable)
 
-# Deployment Probes Check Policy
+# Deployment Probes Check
 
-这是一个 Kubewarden 策略，用于验证 Kubernetes Deployment 中的容器探针配置。该策略可以确保容器配置了适当的健康检查机制。
+This [Kubewarden](https://kubewarden.io) policy validates the health check probe configurations in Kubernetes Deployments.
 
-## 功能特点
+## Settings
 
-- 支持三种类型的探针检查：
-  - 存活探针（Liveness Probe）
-  - 就绪探针（Readiness Probe）
-  - 启动探针（Startup Probe）
-- 可以为每种探针类型配置：
-  - 是否必需
-  - 最小探测周期
-  - 最大超时时间
-- 提供详细的验证错误信息
-- 支持灵活的配置选项
+The policy settings allow you to specify which probes are required for containers in Deployments:
 
-## 配置说明
-
-策略配置使用 JSON 格式，支持以下选项：
-
-```json
-{
-  "liveness_probe": {
-    "required": true,
-    "minimum_period_seconds": 5,
-    "maximum_timeout_seconds": 3
-  },
-  "readiness_probe": {
-    "required": true,
-    "minimum_period_seconds": 3,
-    "maximum_timeout_seconds": 2
-  },
-  "startup_probe": {
-    "required": false,
-    "minimum_period_seconds": 20,
-    "maximum_timeout_seconds": 5
-  }
-}
+```yaml
+# All fields are optional
+liveness_probe:
+  required: true  # Whether liveness probe is required
+readiness_probe:
+  required: true  # Whether readiness probe is required
+startup_probe:
+  required: false # Whether startup probe is required
 ```
 
-### 配置选项说明
+By default:
+- Liveness probe is required
+- Readiness probe is required
+- Startup probe is optional
 
-每种探针类型（`liveness_probe`、`readiness_probe`、`startup_probe`）都支持以下配置：
+## Examples
 
-- `required`：布尔值，指定是否要求配置该类型的探针
-  - 默认值：
-    - `liveness_probe`: `true`
-    - `readiness_probe`: `true`
-    - `startup_probe`: `false`
-
-- `minimum_period_seconds`：整数，指定探测周期的最小值（可选）
-  - 如果设置，必须大于 0
-  - 必须大于 `maximum_timeout_seconds`
-
-- `maximum_timeout_seconds`：整数，指定探测超时时间的最大值（可选）
-  - 如果设置，必须大于 0
-  - 必须小于 `minimum_period_seconds`
-
-### 配置规则
-
-1. 至少需要启用一种探针检查（`required` 为 `true`）
-2. 如果设置了 `minimum_period_seconds`，容器的探针周期必须大于或等于这个值
-3. 如果设置了 `maximum_timeout_seconds`，容器的探针超时时间必须小于或等于这个值
-4. 探针的周期必须大于其超时时间
-
-## 配置示例
-
-### 基本配置
-
-只要求存活探针：
-
-```json
-{
-  "liveness_probe": {
-    "required": true
-  },
-  "readiness_probe": {
-    "required": false
-  }
-}
-```
-
-### 完整配置
-
-要求所有探针，并设置时间限制：
-
-```json
-{
-  "liveness_probe": {
-    "required": true,
-    "minimum_period_seconds": 5,
-    "maximum_timeout_seconds": 3
-  },
-  "readiness_probe": {
-    "required": true,
-    "minimum_period_seconds": 3,
-    "maximum_timeout_seconds": 2
-  },
-  "startup_probe": {
-    "required": true,
-    "minimum_period_seconds": 20,
-    "maximum_timeout_seconds": 5
-  }
-}
-```
-
-## 验证示例
-
-### 有效的 Deployment 配置
+### Accept a Deployment with valid probe configurations
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: example
+  name: nginx
 spec:
   template:
     spec:
       containers:
-      - name: example
-        image: example:latest
+      - name: nginx
+        image: nginx:latest
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8080
-          periodSeconds: 10
-          timeoutSeconds: 1
+            port: 80
         readinessProbe:
           httpGet:
             path: /ready
-            port: 8080
-          periodSeconds: 5
-          timeoutSeconds: 1
-        startupProbe:
-          httpGet:
-            path: /startup
-            port: 8080
-          periodSeconds: 30
-          timeoutSeconds: 1
+            port: 80
 ```
 
-### 常见错误
+### Reject a Deployment with missing required probes
 
-1. 缺少必需的探针：
-   ```
-   container 'example': missing liveness probe
-   ```
+The policy will reject Deployments that are missing required probes:
 
-2. 探针周期太短：
-   ```
-   container 'example': invalid liveness probe: period seconds 3 is less than minimum required 5
-   ```
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  template:
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        # Missing required liveness and readiness probes
+```
 
-3. 探针超时时间太长：
-   ```
-   container 'example': invalid liveness probe: timeout seconds 5 is greater than maximum allowed 3
-   ```
+## Installation
+
+You can install the policy using `kwctl`:
+
+```console
+kwctl pull ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
+```
+
+Then, you can generate the policy manifest:
+
+```console
+kwctl scaffold manifest -t ClusterAdmissionPolicy registry://ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
+```
+
+## License
+
+Apache-2.0
 
 ## 开发
 
@@ -178,7 +103,3 @@ make test
 ```bash
 make e2e-tests
 ```
-
-## 许可证
-
-Apache License 2.0 - 查看 [LICENSE](LICENSE) 文件了解详情。
