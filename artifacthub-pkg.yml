@@ -4,10 +4,10 @@
 #
 # This config can be saved to its default location with:
 #   kwctl scaffold artifacthub > artifacthub-pkg.yml 
-version: 0.1.0
+version: 0.1.1
 name: deployment-probes-check
 displayName: Deployment Probes Check
-createdAt: 2025-02-24T14:16:23.939571Z
+createdAt: 2025-02-24T15:34:40.288826Z
 description: |
   This policy validates that Deployments have properly configured health check probes.
   It can enforce the presence of liveness, readiness, and startup probes, and validate
@@ -16,7 +16,7 @@ license: Apache-2.0
 homeURL: https://github.com/vvhuang-ll/deployment-probes-check
 containersImages:
 - name: policy
-  image: ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
+  image: ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.1
 keywords:
 - deployment
 - probes
@@ -24,17 +24,17 @@ keywords:
 - kubewarden
 links:
 - name: policy
-  url: https://github.com/vvhuang-ll/deployment-probes-check/releases/download/v0.1.0/policy.wasm
+  url: https://github.com/vvhuang-ll/deployment-probes-check/releases/download/v0.1.1/policy.wasm
 - name: source
   url: https://github.com/vvhuang-ll/deployment-probes-check
 install: |
   The policy can be obtained using [`kwctl`](https://github.com/kubewarden/kwctl):
   ```console
-  kwctl pull ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
+  kwctl pull ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.1
   ```
   Then, generate the policy manifest and tune it to your liking. For example:
   ```console
-  kwctl scaffold manifest -t ClusterAdmissionPolicy registry://ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
+  kwctl scaffold manifest -t ClusterAdmissionPolicy registry://ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.1
   ```
 maintainers:
 - name: Kubewarden developers
