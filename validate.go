@@ -10,9 +10,9 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// validate validates the deployment configuration
+// validate validates the deployment configuration。
 func validate(payload []byte) ([]byte, error) {
-	// Parse the validation request
+	// Parse the validation request。
 	validationRequest := kubewarden_protocol.ValidationRequest{}
 	err := json.Unmarshal(payload, &validationRequest)
 	if err != nil {
@@ -24,7 +24,7 @@ func validate(payload []byte) ([]byte, error) {
 			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	// Parse the settings
+	// Parse the settings。
 	settings, err := NewSettingsFromValidationReq(&validationRequest)
 	if err != nil {
 		Logger.ErrorWith("cannot unmarshal settings").
@@ -35,10 +35,10 @@ func validate(payload []byte) ([]byte, error) {
 			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	// Access the raw JSON that describes the object
+	// Access the raw JSON that describes the object。
 	deploymentJSON := validationRequest.Request.Object
 
-	// Validate containers
+	// Validate containers。
 	containers := gjson.GetBytes(deploymentJSON, "spec.template.spec.containers")
 	if !containers.Exists() {
 		return kubewarden.RejectRequest(
@@ -58,7 +58,7 @@ func validate(payload []byte) ([]byte, error) {
 			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	// Validate each container's probes
+	// Validate each container's probes。
 	var validationErr error
 	containers.ForEach(func(_, container gjson.Result) bool {
 		containerName := container.Get("name").String()
@@ -67,7 +67,7 @@ func validate(payload []byte) ([]byte, error) {
 			return false
 		}
 
-		// Validate liveness probe
+		// Validate liveness probe。
 		if settings.LivenessProbe.Required && !container.Get("livenessProbe").Exists() {
 			validationErr = fmt.Errorf("container '%s': missing liveness probe", containerName)
 			return false
@@ -84,7 +84,7 @@ func validate(payload []byte) ([]byte, error) {
 			}
 		}
 
-		// Validate readiness probe
+		// Validate readiness probe。
 		if settings.ReadinessProbe.Required && !container.Get("readinessProbe").Exists() {
 			validationErr = fmt.Errorf("container '%s': missing readiness probe", containerName)
 			return false
@@ -101,7 +101,7 @@ func validate(payload []byte) ([]byte, error) {
 			}
 		}
 
-		// Validate startup probe
+		// Validate startup probe。
 		if settings.StartupProbe.Required && !container.Get("startupProbe").Exists() {
 			validationErr = fmt.Errorf("container '%s': missing startup probe", containerName)
 			return false

@@ -8,27 +8,27 @@ import (
 	kubewarden_protocol "github.com/kubewarden/policy-sdk-go/protocol"
 )
 
-// Settings represents the policy settings for validating Kubernetes deployment probes
+// Settings represents the policy settings for validating Kubernetes deployment probes。
 type Settings struct {
-	// LivenessProbe specifies the requirements for liveness probe configuration
+	// LivenessProbe specifies the requirements for liveness probe configuration。
 	LivenessProbe ProbeConfig `json:"liveness_probe"`
-	// ReadinessProbe specifies the requirements for readiness probe configuration
+	// ReadinessProbe specifies the requirements for readiness probe configuration。
 	ReadinessProbe ProbeConfig `json:"readiness_probe"`
-	// StartupProbe specifies the requirements for startup probe configuration
+	// StartupProbe specifies the requirements for startup probe configuration。
 	StartupProbe ProbeConfig `json:"startup_probe"`
 }
 
-// ProbeConfig represents the configuration requirements for a probe
+// ProbeConfig represents the configuration requirements for a probe。
 type ProbeConfig struct {
-	// Required indicates whether the probe must be configured in the deployment
+	// Required indicates whether the probe must be configured in the deployment。
 	Required bool `json:"required"`
-	// MinPeriodSeconds specifies the minimum allowed period between probe executions (in seconds)
+	// MinPeriodSeconds specifies the minimum allowed period between probe executions (in seconds)。
 	MinPeriodSeconds int32 `json:"min_period_seconds,omitempty"`
-	// MaxTimeoutSeconds specifies the maximum allowed timeout for probe execution (in seconds)
+	// MaxTimeoutSeconds specifies the maximum allowed timeout for probe execution (in seconds)。
 	MaxTimeoutSeconds int32 `json:"max_timeout_seconds,omitempty"`
 }
 
-// DefaultSettings returns default settings
+// DefaultSettings returns default settings。
 func DefaultSettings() *Settings {
 	return &Settings{
 		LivenessProbe: ProbeConfig{
@@ -43,17 +43,17 @@ func DefaultSettings() *Settings {
 	}
 }
 
-// UnmarshalJSON unmarshals the settings with defaults
+// UnmarshalJSON unmarshals the settings with defaults。
 func (s *Settings) UnmarshalJSON(data []byte) error {
-	// Set defaults first
+	// Set defaults first。
 	defaults := DefaultSettings()
 	*s = *defaults
 
-	// Define a type alias to avoid recursion
+	// Define a type alias to avoid recursion。
 	type SettingsAlias Settings
 	alias := (*SettingsAlias)(s)
 
-	// Unmarshal into the alias
+	// Unmarshal into the alias。
 	if err := json.Unmarshal(data, alias); err != nil {
 		return err
 	}
@@ -61,19 +61,19 @@ func (s *Settings) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Validate validates the Settings configuration
+// Validate validates the Settings configuration。
 func (s *Settings) Validate() error {
-	// Validate liveness probe configuration
+	// Validate liveness probe configuration。
 	if err := s.validateProbeConfig("liveness probe", s.LivenessProbe); err != nil {
 		return err
 	}
 
-	// Validate readiness probe configuration
+	// Validate readiness probe configuration。
 	if err := s.validateProbeConfig("readiness probe", s.ReadinessProbe); err != nil {
 		return err
 	}
 
-	// Validate startup probe configuration
+	// Validate startup probe configuration。
 	if err := s.validateProbeConfig("startup probe", s.StartupProbe); err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (s *Settings) Validate() error {
 	return nil
 }
 
-// validateProbeConfig validates individual probe configuration
+// validateProbeConfig validates individual probe configuration。
 func (s *Settings) validateProbeConfig(probeName string, config ProbeConfig) error {
 	if config.MinPeriodSeconds < 0 {
 		return fmt.Errorf("%s: min_period_seconds must be non-negative", probeName)
@@ -96,9 +96,9 @@ func (s *Settings) validateProbeConfig(probeName string, config ProbeConfig) err
 	return nil
 }
 
-// ValidateSettings validates the settings
+// ValidateSettings validates the settings。
 func ValidateSettings(payload []byte) ([]byte, error) {
-	// Parse the settings
+	// Parse the settings。
 	settings := Settings{}
 	err := json.Unmarshal(payload, &settings)
 	if err != nil {
@@ -109,7 +109,7 @@ func ValidateSettings(payload []byte) ([]byte, error) {
 			kubewarden.Message(fmt.Sprintf("cannot unmarshal settings: %v", err)))
 	}
 
-	// Validate the settings
+	// Validate the settings。
 	err = settings.Validate()
 	if err != nil {
 		Logger.ErrorWith("settings validation failed").
@@ -123,7 +123,7 @@ func ValidateSettings(payload []byte) ([]byte, error) {
 	return kubewarden.AcceptSettings()
 }
 
-// NewSettingsFromValidationReq creates Settings from ValidationRequest
+// NewSettingsFromValidationReq creates Settings from ValidationRequest。
 func NewSettingsFromValidationReq(validationReq *kubewarden_protocol.ValidationRequest) (Settings, error) {
 	settings := Settings{}
 	err := json.Unmarshal(validationReq.Settings, &settings)
