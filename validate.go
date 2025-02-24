@@ -26,13 +26,13 @@ func validate(payload []byte) ([]byte, error) {
 	}
 
 	// Parse the settings。
-	settings, err := NewSettingsFromValidationReq(&validationRequest)
-	if err != nil {
+	settings, settingsErr := NewSettingsFromValidationReq(&validationRequest)
+	if settingsErr != nil {
 		Logger.ErrorWith("cannot unmarshal settings").
-			Err("error", err).
+			Err("error", settingsErr).
 			Write()
 		return kubewarden.RejectRequest(
-			kubewarden.Message(fmt.Sprintf("cannot unmarshal settings: %v", err)),
+			kubewarden.Message(fmt.Sprintf("cannot unmarshal settings: %v", settingsErr)),
 			kubewarden.Code(http.StatusBadRequest))
 	}
 

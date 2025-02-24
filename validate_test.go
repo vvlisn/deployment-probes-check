@@ -183,14 +183,14 @@ func TestValidateDeploymentProbes(t *testing.T) {
 				t.Errorf("Unexpected error: %+v", err)
 			}
 
-			responsePayload, err := validate(payload)
-			if err != nil {
-				t.Errorf("Unexpected error: %+v", err)
+			responsePayload, validateErr := validate(payload)
+			if validateErr != nil {
+				t.Errorf("Unexpected error: %+v", validateErr)
 			}
 
 			var response kubewarden_protocol.ValidationResponse
-			if err := json.Unmarshal(responsePayload, &response); err != nil {
-				t.Errorf("Unexpected error: %+v", err)
+			if unmarshalErr := json.Unmarshal(responsePayload, &response); unmarshalErr != nil {
+				t.Errorf("Unexpected error: %+v", unmarshalErr)
 			}
 
 			if response.Accepted != test.shouldAllow {
