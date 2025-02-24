@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	onelog "github.com/francoispqt/onelog"
 	kubewarden "github.com/kubewarden/policy-sdk-go"
 	kubewarden_protocol "github.com/kubewarden/policy-sdk-go/protocol"
 )
@@ -97,12 +98,12 @@ func (s *Settings) validateProbeConfig(probeName string, config ProbeConfig) err
 }
 
 // ValidateSettings validates the settings。
-func ValidateSettings(payload []byte) ([]byte, error) {
+func ValidateSettings(payload []byte, logger *onelog.Logger) ([]byte, error) {
 	// Parse the settings。
 	settings := Settings{}
 	err := json.Unmarshal(payload, &settings)
 	if err != nil {
-		Logger.ErrorWith("cannot unmarshal settings").
+		logger.ErrorWith("cannot unmarshal settings").
 			Err("error", err).
 			Write()
 		return kubewarden.RejectSettings(
@@ -112,14 +113,14 @@ func ValidateSettings(payload []byte) ([]byte, error) {
 	// Validate the settings。
 	err = settings.Validate()
 	if err != nil {
-		Logger.ErrorWith("settings validation failed").
+		logger.ErrorWith("settings validation failed").
 			Err("error", err).
 			Write()
 		return kubewarden.RejectSettings(
 			kubewarden.Message(err.Error()))
 	}
 
-	Logger.InfoWith("settings validation succeeded").Write()
+	logger.InfoWith("settings validation succeeded").Write()
 	return kubewarden.AcceptSettings()
 }
 

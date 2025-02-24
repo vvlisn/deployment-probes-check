@@ -6,21 +6,35 @@ import (
 	wapc "github.com/wapc/wapc-guest-tinygo"
 )
 
-// Logger is the logger instance used throughout the policy。
-var Logger *onelog.Logger
+// PolicyHandler handles the policy validation requests
+type PolicyHandler struct {
+	logger *onelog.Logger
+}
 
-func init() {
-	// Initialize the logger
+// NewPolicyHandler creates a new PolicyHandler instance
+func NewPolicyHandler() *PolicyHandler {
 	logWriter := kubewarden.KubewardenLogWriter{}
-	Logger = onelog.New(
+	logger := onelog.New(
 		&logWriter,
 		onelog.ALL, // shortcut for onelog.DEBUG|onelog.INFO|onelog.WARN|onelog.ERROR|onelog.FATAL
 	)
+	return &PolicyHandler{logger: logger}
+}
+
+// Validate handles the validation request
+func (h *PolicyHandler) Validate(payload []byte) ([]byte, error) {
+	return validate(payload, h.logger)
+}
+
+// ValidateSettings handles the settings validation request
+func (h *PolicyHandler) ValidateSettings(payload []byte) ([]byte, error) {
+	return ValidateSettings(payload, h.logger)
 }
 
 func main() {
+	handler := NewPolicyHandler()
 	wapc.RegisterFunctions(wapc.Functions{
-		"validate":          validate,
-		"validate_settings": ValidateSettings,
+		"validate":          handler.Validate,
+		"validate_settings": handler.ValidateSettings,
 	})
 }

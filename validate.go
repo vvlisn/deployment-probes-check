@@ -6,18 +6,19 @@ import (
 	"fmt"
 	"net/http"
 
+	onelog "github.com/francoispqt/onelog"
 	kubewarden "github.com/kubewarden/policy-sdk-go"
 	kubewarden_protocol "github.com/kubewarden/policy-sdk-go/protocol"
 	"github.com/tidwall/gjson"
 )
 
 // validate validates the deployment configuration。
-func validate(payload []byte) ([]byte, error) {
+func validate(payload []byte, logger *onelog.Logger) ([]byte, error) {
 	// Parse the validation request。
 	validationRequest := kubewarden_protocol.ValidationRequest{}
 	err := json.Unmarshal(payload, &validationRequest)
 	if err != nil {
-		Logger.ErrorWith("cannot unmarshal validation request").
+		logger.ErrorWith("cannot unmarshal validation request").
 			Err("error", err).
 			Write()
 		return kubewarden.RejectRequest(
@@ -28,7 +29,7 @@ func validate(payload []byte) ([]byte, error) {
 	// Parse the settings。
 	settings, settingsErr := NewSettingsFromValidationReq(&validationRequest)
 	if settingsErr != nil {
-		Logger.ErrorWith("cannot unmarshal settings").
+		logger.ErrorWith("cannot unmarshal settings").
 			Err("error", settingsErr).
 			Write()
 		return kubewarden.RejectRequest(
@@ -38,7 +39,7 @@ func validate(payload []byte) ([]byte, error) {
 
 	// Validate deployment。
 	if validateErr := validateDeployment(validationRequest.Request.Object, settings); validateErr != nil {
-		Logger.WarnWith("deployment validation failed").
+		logger.WarnWith("deployment validation failed").
 			Err("error", validateErr).
 			Write()
 		return kubewarden.RejectRequest(
@@ -46,7 +47,7 @@ func validate(payload []byte) ([]byte, error) {
 			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	Logger.InfoWith("deployment validation succeeded").Write()
+	logger.InfoWith("deployment validation succeeded").Write()
 	return kubewarden.AcceptRequest()
 }
 
