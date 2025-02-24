@@ -4,7 +4,7 @@ BIN_DIR := $(abspath $(ROOT_DIR)/bin)
 SOURCE_FILES := $(shell find . -type f -name '*.go')
 # It's necessary to call cut because kwctl command does not handle version
 # starting with v.
-VERSION ?= $(shell git describe | cut -c2-)
+VERSION ?= $(shell git describe --tags --abbrev=0 | cut -c2-)
 
 GOLANGCI_LINT_VER := v1.59.1
 GOLANGCI_LINT_BIN := golangci-lint
