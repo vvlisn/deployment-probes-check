@@ -6,12 +6,12 @@ import (
 	wapc "github.com/wapc/wapc-guest-tinygo"
 )
 
-// PolicyHandler handles the policy validation requests
+// PolicyHandler handles the policy validation requests。
 type PolicyHandler struct {
 	logger *onelog.Logger
 }
 
-// NewPolicyHandler creates a new PolicyHandler instance
+// NewPolicyHandler creates a new PolicyHandler instance。
 func NewPolicyHandler() *PolicyHandler {
 	logWriter := kubewarden.KubewardenLogWriter{}
 	logger := onelog.New(
@@ -21,12 +21,12 @@ func NewPolicyHandler() *PolicyHandler {
 	return &PolicyHandler{logger: logger}
 }
 
-// Validate handles the validation request
+// Validate handles the validation request。
 func (h *PolicyHandler) Validate(payload []byte) ([]byte, error) {
 	return validate(payload, h.logger)
 }
 
-// ValidateSettings handles the settings validation request
+// ValidateSettings handles the settings validation request。
 func (h *PolicyHandler) ValidateSettings(payload []byte) ([]byte, error) {
 	return ValidateSettings(payload, h.logger)
 }
