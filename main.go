@@ -6,7 +6,7 @@ import (
 	wapc "github.com/wapc/wapc-guest-tinygo"
 )
 
-// Logger is the global logger instance
+// Logger is the global logger instance。
 var (
 	logWriter = kubewarden.KubewardenLogWriter{}
 	Logger    = onelog.New(

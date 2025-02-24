@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -10,9 +11,9 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// validate validates the deployment configuration
+// validate validates the deployment configuration。
 func validate(payload []byte) ([]byte, error) {
-	// Parse the validation request
+	// Parse the validation request。
 	validationRequest := kubewarden_protocol.ValidationRequest{}
 	err := json.Unmarshal(payload, &validationRequest)
 	if err != nil {
@@ -24,7 +25,7 @@ func validate(payload []byte) ([]byte, error) {
 			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	// Parse the settings
+	// Parse the settings。
 	settings, err := NewSettingsFromValidationReq(&validationRequest)
 	if err != nil {
 		Logger.ErrorWith("cannot unmarshal settings").
@@ -35,7 +36,7 @@ func validate(payload []byte) ([]byte, error) {
 			kubewarden.Code(http.StatusBadRequest))
 	}
 
-	// Validate deployment
+	// Validate deployment。
 	if err := validateDeployment(validationRequest.Request.Object, settings); err != nil {
 		Logger.WarnWith("deployment validation failed").
 			Err("error", err).
@@ -49,23 +50,23 @@ func validate(payload []byte) ([]byte, error) {
 	return kubewarden.AcceptRequest()
 }
 
-// validateDeployment validates the deployment configuration
+// validateDeployment validates the deployment configuration。
 func validateDeployment(deploymentJSON []byte, settings Settings) error {
 	// Validate containers
 	containers := gjson.GetBytes(deploymentJSON, "spec.template.spec.containers")
 	if !containers.Exists() {
-		return fmt.Errorf("invalid deployment: missing containers")
+		return errors.New("invalid deployment: missing containers")
 	}
 
 	if !containers.IsArray() {
-		return fmt.Errorf("invalid deployment: containers must be an array")
+		return errors.New("invalid deployment: containers must be an array")
 	}
 
 	if len(containers.Array()) == 0 {
-		return fmt.Errorf("no containers found in deployment")
+		return errors.New("no containers found in deployment")
 	}
 
-	// Validate each container's probes
+	// Validate each container's probes。
 	var validationErr error
 	containers.ForEach(func(_, container gjson.Result) bool {
 		if err := validateContainer(container, settings); err != nil {
@@ -78,24 +79,24 @@ func validateDeployment(deploymentJSON []byte, settings Settings) error {
 	return validationErr
 }
 
-// validateContainer validates a single container's probe configurations
+// validateContainer validates a single container's probe configurations。
 func validateContainer(container gjson.Result, settings Settings) error {
 	containerName := container.Get("name").String()
 	if containerName == "" {
-		return fmt.Errorf("container name is required")
+		return errors.New("container name is required")
 	}
 
-	// Validate liveness probe
+	// Validate liveness probe。
 	if err := validateLivenessProbe(container, containerName, settings.LivenessProbe); err != nil {
 		return err
 	}
 
-	// Validate readiness probe
+	// Validate readiness probe。
 	if err := validateReadinessProbe(container, containerName, settings.ReadinessProbe); err != nil {
 		return err
 	}
 
-	// Validate startup probe
+	// Validate startup probe。
 	if err := validateStartupProbe(container, containerName, settings.StartupProbe); err != nil {
 		return err
 	}
@@ -103,7 +104,7 @@ func validateContainer(container gjson.Result, settings Settings) error {
 	return nil
 }
 
-// validateLivenessProbe validates the liveness probe configuration
+// validateLivenessProbe validates the liveness probe configuration。
 func validateLivenessProbe(container gjson.Result, containerName string, config ProbeConfig) error {
 	if config.Required && !container.Get("livenessProbe").Exists() {
 		return fmt.Errorf("container '%s': missing liveness probe", containerName)
@@ -121,7 +122,7 @@ func validateLivenessProbe(container gjson.Result, containerName string, config 
 	return nil
 }
 
-// validateReadinessProbe validates the readiness probe configuration
+// validateReadinessProbe validates the readiness probe configuration。
 func validateReadinessProbe(container gjson.Result, containerName string, config ProbeConfig) error {
 	if config.Required && !container.Get("readinessProbe").Exists() {
 		return fmt.Errorf("container '%s': missing readiness probe", containerName)
@@ -139,7 +140,7 @@ func validateReadinessProbe(container gjson.Result, containerName string, config
 	return nil
 }
 
-// validateStartupProbe validates the startup probe configuration
+// validateStartupProbe validates the startup probe configuration。
 func validateStartupProbe(container gjson.Result, containerName string, config ProbeConfig) error {
 	if config.Required && !container.Get("startupProbe").Exists() {
 		return fmt.Errorf("container '%s': missing startup probe", containerName)
@@ -157,7 +158,7 @@ func validateStartupProbe(container gjson.Result, containerName string, config P
 	return nil
 }
 
-// validateProbeTimings validates the timing parameters of a probe
+// validateProbeTimings validates the timing parameters of a probe。
 func validateProbeTimings(probeType string, containerName string, periodSeconds, timeoutSeconds int64, config ProbeConfig) error {
 	if config.MinPeriodSeconds > 0 && periodSeconds < int64(config.MinPeriodSeconds) {
 		return fmt.Errorf("container '%s': %s probe period (%ds) is less than minimum required (%ds)",
