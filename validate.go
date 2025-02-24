@@ -161,8 +161,13 @@ func validateStartupProbe(container gjson.Result, containerName string, config P
 // validateProbeTimings validates the timing parameters of a probe。
 func validateProbeTimings(probeType string, containerName string, periodSeconds, timeoutSeconds int64, config ProbeConfig) error {
 	if config.MinPeriodSeconds > 0 && periodSeconds < int64(config.MinPeriodSeconds) {
-		return fmt.Errorf("container '%s': %s probe period (%ds) is less than minimum required (%ds)",
-			containerName, probeType, periodSeconds, config.MinPeriodSeconds)
+		return fmt.Errorf(
+			"container '%s': %s probe period (%ds) is less than minimum required (%ds)",
+			containerName,
+			probeType,
+			periodSeconds,
+			config.MinPeriodSeconds,
+		)
 	}
 
 	if config.MaxTimeoutSeconds > 0 && timeoutSeconds > int64(config.MaxTimeoutSeconds) {
