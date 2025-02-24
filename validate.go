@@ -37,12 +37,12 @@ func validate(payload []byte) ([]byte, error) {
 	}
 
 	// Validate deployment。
-	if err := validateDeployment(validationRequest.Request.Object, settings); err != nil {
+	if validateErr := validateDeployment(validationRequest.Request.Object, settings); validateErr != nil {
 		Logger.WarnWith("deployment validation failed").
-			Err("error", err).
+			Err("error", validateErr).
 			Write()
 		return kubewarden.RejectRequest(
-			kubewarden.Message(err.Error()),
+			kubewarden.Message(validateErr.Error()),
 			kubewarden.Code(http.StatusBadRequest))
 	}
 
@@ -159,7 +159,8 @@ func validateStartupProbe(container gjson.Result, containerName string, config P
 }
 
 // validateProbeTimings validates the timing parameters of a probe。
-func validateProbeTimings(probeType string, containerName string, periodSeconds, timeoutSeconds int64, config ProbeConfig) error {
+func validateProbeTimings(probeType string, containerName string, periodSeconds,
+	timeoutSeconds int64, config ProbeConfig) error {
 	if config.MinPeriodSeconds > 0 && periodSeconds < int64(config.MinPeriodSeconds) {
 		return fmt.Errorf(
 			"container '%s': %s probe period (%ds) is less than minimum required (%ds)",
