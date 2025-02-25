@@ -1,0 +1,58 @@
+# Kubewarden Artifacthub Package config
+#
+# Use this config to submit the policy to https://artifacthub.io.
+#
+# This config can be saved to its default location with:
+#   kwctl scaffold artifacthub > artifacthub-pkg.yml 
+version: 0.1.1
+name: deployment-probes-check
+displayName: Deployment Probes Check
+createdAt: 2025-02-25T03:39:45.202819Z
+description: |
+  This policy validates that Deployments have properly configured health check probes.
+  It can enforce the presence of liveness, readiness, and startup probes, and validate
+  their period and timeout settings.
+license: Apache-2.0
+homeURL: https://github.com/vvhuang-ll/deployment-probes-check
+containersImages:
+- name: policy
+  image: ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.1
+keywords:
+- deployment
+- probes
+- health check
+- kubewarden
+links:
+- name: policy
+  url: https://github.com/vvhuang-ll/deployment-probes-check/releases/download/v0.1.1/policy.wasm
+- name: source
+  url: https://github.com/vvhuang-ll/deployment-probes-check
+install: |
+  The policy can be obtained using [`kwctl`](https://github.com/kubewarden/kwctl):
+  ```console
+  kwctl pull ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.1
+  ```
+  Then, generate the policy manifest and tune it to your liking. For example:
+  ```console
+  kwctl scaffold manifest -t ClusterAdmissionPolicy registry://ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.1
+  ```
+maintainers:
+- name: Kubewarden developers
+  email: kubewarden@suse.de
+provider:
+  name: kubewarden
+recommendations:
+- url: https://artifacthub.io/packages/helm/kubewarden/kubewarden-controller
+annotations:
+  kubewarden/mutation: 'false'
+  kubewarden/resources: Deployment
+  kubewarden/rules: |
+    - apiGroups:
+      - ''
+      apiVersions:
+      - v1
+      resources:
+      - deployments
+      operations:
+      - CREATE
+      - UPDATE
