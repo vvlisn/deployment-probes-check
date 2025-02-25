@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"net/http"
 
-	onelog "github.com/francoispqt/onelog"
 	kubewarden "github.com/kubewarden/policy-sdk-go"
 	kubewarden_protocol "github.com/kubewarden/policy-sdk-go/protocol"
 	"github.com/tidwall/gjson"
 )
 
 // validate validates the deployment configuration。
-func validate(payload []byte, logger *onelog.Logger) ([]byte, error) {
+func validate(payload []byte) ([]byte, error) {
 	// Parse the validation request。
 	validationRequest := kubewarden_protocol.ValidationRequest{}
 	err := json.Unmarshal(payload, &validationRequest)

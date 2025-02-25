@@ -9,36 +9,27 @@
 - 支持验证 liveness、readiness 和 startup 探针的配置
 - 可以设置哪些探针是必需的
 - 验证探针的时间参数是否合理，包括：
-  - initialDelaySeconds
-  - timeoutSeconds
-  - periodSeconds
-  - successThreshold
-  - failureThreshold
+  - periodSeconds（探测间隔）
+  - timeoutSeconds（探测超时）
 
 ## 配置说明
 
-The policy settings allow you to specify which probes are required for containers in Deployments:
+策略配置允许你指定哪些探针是必需的，以及它们的时间参数限制：
 
 ```yaml
-# 所有字段都是可选的
+# 配置示例
 liveness_probe:
   required: true  # 是否要求 liveness 探针
-  min_period_seconds: 10  # 最小周期时间（秒）
-  max_period_seconds: 300  # 最大周期时间（秒）
-  min_timeout_seconds: 1  # 最小超时时间（秒）
-  max_timeout_seconds: 60  # 最大超时时间（秒）
+  min_period_seconds: 10  # 最小探测间隔（秒）
+  max_timeout_seconds: 5  # 最大探测超时（秒）
 readiness_probe:
   required: true  # 是否要求 readiness 探针
-  min_period_seconds: 10
-  max_period_seconds: 300
-  min_timeout_seconds: 1
-  max_timeout_seconds: 60
+  min_period_seconds: 10  # 最小探测间隔（秒）
+  max_timeout_seconds: 5  # 最大探测超时（秒）
 startup_probe:
   required: false  # 是否要求 startup 探针
-  min_period_seconds: 10
-  max_period_seconds: 300
-  min_timeout_seconds: 1
-  max_timeout_seconds: 60
+  min_period_seconds: 10  # 最小探测间隔（秒）
+  max_timeout_seconds: 30  # 最大探测超时（秒）
 ```
 
 默认配置：
@@ -46,13 +37,9 @@ startup_probe:
 - Readiness 探针是必需的
 - Startup 探针是可选的
 
-时间参数的默认限制：
-- periodSeconds: 10-300 秒
-- timeoutSeconds: 1-60 秒
+## 示例
 
-## Examples
-
-### Accept a Deployment with valid probe configurations
+### 接受的 Deployment 配置
 
 ```yaml
 apiVersion: apps/v1
@@ -69,15 +56,19 @@ spec:
           httpGet:
             path: /healthz
             port: 80
+          periodSeconds: 10    # 符合最小探测间隔要求
+          timeoutSeconds: 5    # 符合最大超时要求
         readinessProbe:
           httpGet:
             path: /ready
             port: 80
+          periodSeconds: 10
+          timeoutSeconds: 5
 ```
 
-### Reject a Deployment with missing required probes
+### 拒绝的 Deployment 配置
 
-The policy will reject Deployments that are missing required probes:
+以下配置会被拒绝，因为缺少必需的探针：
 
 ```yaml
 apiVersion: apps/v1
@@ -90,26 +81,43 @@ spec:
       containers:
       - name: nginx
         image: nginx:latest
-        # Missing required liveness and readiness probes
+        # 缺少必需的 liveness 和 readiness 探针
 ```
 
-## Installation
+以下配置会被拒绝，因为探针参数不符合要求：
 
-You can install the policy using `kwctl`:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  template:
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 80
+          periodSeconds: 5     # 小于最小探测间隔要求
+          timeoutSeconds: 10   # 超过最大超时要求
+```
+
+## 安装
+
+使用 `kwctl` 安装策略：
 
 ```console
 kwctl pull ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
 ```
 
-Then, you can generate the policy manifest:
+生成策略清单：
 
 ```console
 kwctl scaffold manifest -t ClusterAdmissionPolicy registry://ghcr.io/vvhuang-ll/policies/deployment-probes-check:v0.1.0
 ```
-
-## License
-
-Apache-2.0
 
 ## 开发
 
@@ -130,3 +138,7 @@ make test
 ```bash
 make e2e-tests
 ```
+
+## License
+
+Apache-2.0

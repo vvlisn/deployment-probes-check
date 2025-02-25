@@ -183,8 +183,7 @@ func TestValidateDeploymentProbes(t *testing.T) {
 				t.Errorf("Unexpected error: %+v", err)
 			}
 
-			handler := NewPolicyHandler()
-			responsePayload, validateErr := validate(payload, handler.logger)
+			responsePayload, validateErr := validate(payload)
 			if validateErr != nil {
 				t.Errorf("Unexpected error: %+v", validateErr)
 			}
