@@ -32,7 +32,7 @@ type ProbeConfig struct {
 func DefaultSettings() *Settings {
 	return &Settings{
 		LivenessProbe: ProbeConfig{
-			Required: true,
+			Required: false,
 		},
 		ReadinessProbe: ProbeConfig{
 			Required: true,

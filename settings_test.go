@@ -13,8 +13,8 @@ func TestParsingSettingsWithNoValueProvided(t *testing.T) {
 		t.Errorf("Unexpected error: %+v", err)
 	}
 
-	if !settings.LivenessProbe.Required {
-		t.Error("Expected LivenessProbe.Required to be true")
+	if settings.LivenessProbe.Required {
+		t.Error("Expected LivenessProbe.Required to be false")
 	}
 	if !settings.ReadinessProbe.Required {
 		t.Error("Expected ReadinessProbe.Required to be true")
